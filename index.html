@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#fff0f6">
+<link rel="icon" href="data:,">
+<title>宝宝小游戏</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  html,body{width:100%;height:100%;overflow:hidden;touch-action:manipulation}
+  body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+    background:linear-gradient(160deg,#fff3c4 0%,#ffe0ec 50%,#d9f1ff 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5vmin;padding:4vmin}
+  .emoji{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;line-height:1}
+  h1{font-size:max(7vmin,26px);color:#d9668f;letter-spacing:.6vmin}
+  .row{display:flex;gap:6vmin;flex-wrap:wrap;justify-content:center}
+  a.btn{width:min(40vmin,80vw);height:min(40vmin,80vw);min-width:160px;min-height:160px;border-radius:8vmin;text-decoration:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vmin;color:#5b4a6b;font-weight:800;font-size:max(4.5vmin,18px);
+    box-shadow:0 1.6vmin 0 rgba(0,0,0,.08),0 3vmin 6vmin rgba(80,60,120,.15);transition:transform .15s;animation:bob 3s ease-in-out infinite}
+  a.btn:active{transform:scale(.94)}
+  a.btn .emoji{font-size:max(18vmin,70px)}
+  .tap{background:radial-gradient(circle at 50% 35%,#fff 0%,#ffd9b3 80%)}
+  .talk{background:radial-gradient(circle at 50% 35%,#fff 0%,#cfeeff 80%);animation-delay:-1.5s}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5vmin)}}
+  @media (orientation:portrait){.row{flex-direction:column;gap:5vmin}}
+  p{font-size:max(2.6vmin,13px);color:#a08aa8;text-align:center}
+</style>
+</head>
+<body>
+  <h1><span class="emoji">🧸</span> 宝宝小游戏</h1>
+  <div class="row">
+    <a class="btn tap" href="tap/"><span class="emoji">🐶</span>宝宝点点乐</a>
+    <a class="btn talk" href="talk/"><span class="emoji">🗣️</span>宝宝学说话</a>
+  </div>
+  <p>适合 2 岁左右的宝宝 · 建议横屏或竖屏全屏使用 · 游戏内右上角长按 2 秒为家长设置</p>
+</body>
+</html>

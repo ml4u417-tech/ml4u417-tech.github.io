@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#e6f4ff">
+<link rel="icon" href="data:,">
+<title>宝宝学说话</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+  html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;}
+  body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+    background:linear-gradient(160deg,#dff3ff 0%,#fff0f6 50%,#fff7d1 100%);background-size:200% 200%;
+    animation:bgshift 26s ease-in-out infinite;position:fixed;inset:0;color:#5b4a6b}
+  @keyframes bgshift{0%,100%{background-position:0% 0%}50%{background-position:100% 100%}}
+  .emoji{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla",sans-serif;line-height:1;font-style:normal}
+  .blob{position:fixed;border-radius:50%;opacity:.45;pointer-events:none;animation:float 14s ease-in-out infinite}
+  .b1{width:40vmin;height:40vmin;background:#cfe9ff;left:-12vmin;bottom:-10vmin}
+  .b2{width:30vmin;height:30vmin;background:#ffd6e6;right:-8vmin;top:-8vmin;animation-delay:-6s}
+  .b3{width:20vmin;height:20vmin;background:#fff0a8;left:8vmin;top:-6vmin;animation-delay:-10s}
+  @keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(3vmin,4vmin)}}
+
+  /* layout */
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;gap:4vmin;
+    padding:max(3vmin,env(safe-area-inset-top)) max(3vmin,env(safe-area-inset-right)) max(3vmin,env(safe-area-inset-bottom)) max(3vmin,env(safe-area-inset-left));}
+  @media (orientation:portrait){#stage{flex-direction:column;gap:3vh}}
+  #main{display:flex;flex-direction:column;align-items:center;gap:2.5vmin}
+
+  #card{position:relative;width:min(72vmin,62vw);height:min(66vmin,72vh);border-radius:7vmin;background:radial-gradient(circle at 50% 30%,#fff 0%,#fff 45%,var(--tint,#ffe9f2) 100%);
+    box-shadow:0 1.5vmin 0 rgba(0,0,0,.07),0 3vmin 6vmin rgba(80,60,120,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:pointer;transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .35s;}
+  @media (orientation:portrait){#card{width:min(84vw,62vh);height:min(100vw,56vh)}}
+  #card.out{transform:translateX(-60vw) rotate(-18deg);opacity:0;transition:transform .35s ease-in,opacity .3s}
+  #card.pre{transform:translateX(60vw) rotate(18deg);opacity:0;transition:none}
+  #card.speak #pic{animation:talk .5s ease-in-out infinite}
+  #card.tap{animation:squish .45s ease}
+  @keyframes talk{0%,100%{transform:scale(1)}50%{transform:scale(1.08) rotate(2deg)}}
+  @keyframes squish{0%,100%{transform:scale(1)}35%{transform:scale(.95)}70%{transform:scale(1.03)}}
+  #pic{font-size:min(30vmin,28vw);filter:drop-shadow(0 1vmin 0 rgba(0,0,0,.08));pointer-events:none}
+  @media (orientation:portrait){#pic{font-size:min(30vh,48vw)}}
+  #words{margin-top:2.5vmin;text-align:center;pointer-events:none;transition:opacity .3s}
+  #words.hidden{opacity:0}
+  #py{font-size:min(5.5vmin,7vw);color:#9a86b5;letter-spacing:.3vmin;font-family:"Noto Sans","Helvetica Neue",Arial,sans-serif}
+  #zh{font-size:min(13vmin,15vw);font-weight:800;color:#5b4a6b;letter-spacing:1.5vmin;line-height:1.15}
+  #zh span{display:inline-block;transition:transform .25s,color .25s}
+  #zh span.lit{transform:translateY(-1.5vmin) scale(1.12);color:#ff6f9f}
+
+  /* your-turn indicator */
+  #turn{position:relative;width:min(16vmin,22vw);height:min(16vmin,22vw);display:flex;align-items:center;justify-content:center;
+    opacity:0;transform:scale(.6);transition:opacity .3s,transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+  #turn.on{opacity:1;transform:scale(1)}
+  #turn .disc{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0%,#ffd1e3 70%);box-shadow:0 1vmin 3vmin rgba(255,111,159,.3)}
+  #turn .ring{position:absolute;inset:0;border-radius:50%;border:1vmin solid #ff9fc0;opacity:0}
+  #turn.on .ring{animation:ripple 1.6s ease-out infinite}
+  #turn.on .ring.r2{animation-delay:.8s}
+  @keyframes ripple{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.8);opacity:0}}
+  #turn .lvl{position:absolute;inset:0;border-radius:50%;background:rgba(255,111,159,.25);transform:scale(1);transition:transform .08s}
+  #turn .ico{position:relative;font-size:min(9vmin,12vw);animation:none}
+  #turn.on .ico{animation:mouth 1s ease-in-out infinite}
+  @keyframes mouth{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+  #turnRow{height:min(16vmin,22vw);display:flex;align-items:center;justify-content:center}
+  @media (orientation:portrait){#turnRow,#turn{height:min(12vh,22vw);width:min(12vh,22vw)} #turn .ico{font-size:min(7vh,12vw)}}
+
+  /* next arrow */
+  #next{width:min(22vmin,24vw);height:min(22vmin,24vw);border-radius:50%;border:none;outline:none;flex:none;
+    background:radial-gradient(circle at 35% 30%,#b8f5c9 0%,#6fdc95 60%,#45c277 100%);
+    box-shadow:0 1.5vmin 0 #33a663,0 3vmin 5vmin rgba(60,180,110,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:transform .2s}
+  #next svg{width:55%;height:55%;pointer-events:none}
+  #next.invite{animation:invite 1.2s ease-in-out infinite}
+  #next.press{transform:scale(.9)}
+  @keyframes invite{0%,100%{transform:translateX(0) scale(1)}50%{transform:translateX(1.5vmin) scale(1.08)}}
+  @media (orientation:portrait){#next{width:min(15vh,26vw);height:min(15vh,26vw)}}
+
+  canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:8}
+  #praise{position:fixed;z-index:9;left:50%;top:42%;transform:translate(-50%,-50%) scale(.3);opacity:0;pointer-events:none;
+    font-size:min(14vmin,16vw);font-weight:900;color:#ff6f9f;white-space:nowrap;
+    text-shadow:0 .6vmin 0 #fff,0 0 3vmin rgba(255,255,255,.9);transition:transform .5s cubic-bezier(.34,1.7,.64,1),opacity .3s}
+  #praise.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+
+  /* start */
+  #start{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4vmin;
+    background:radial-gradient(circle at 50% 45%,#fffbe0 0%,#ffe6f1 55%,#dcf0ff 100%);transition:opacity .5s,transform .5s}
+  #start.gone{opacity:0;transform:scale(1.15);pointer-events:none}
+  #go{width:62vmin;height:62vmin;border-radius:50%;border:none;outline:none;
+    background:radial-gradient(circle at 35% 30%,#fff7a8 0%,#ffd84d 45%,#ffb93b 100%);
+    box-shadow:0 2.4vmin 0 #e89a1f,0 4vmin 8vmin rgba(255,150,40,.45),inset 0 -2vmin 4vmin rgba(255,140,0,.25);
+    display:flex;align-items:center;justify-content:center;animation:breathe 2.2s ease-in-out infinite;cursor:pointer}
+  #go .emoji{font-size:38vmin;pointer-events:none}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+  #start .hint{font-size:6vmin;color:#e0779a;font-weight:700;letter-spacing:.5vmin;opacity:.85}
+  .orbit{position:absolute;font-size:9vmin;animation:bob 3s ease-in-out infinite;pointer-events:none}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-3vmin) rotate(6deg)}}
+
+  /* parent control */
+  #parent{position:fixed;z-index:15;top:max(1.2vmin,env(safe-area-inset-top));right:max(1.2vmin,env(safe-area-inset-right));
+    width:11vmin;height:11vmin;min-width:44px;min-height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.35);opacity:.35;transition:opacity .3s}
+  #parent .emoji{font-size:max(5vmin,20px);pointer-events:none}
+  #parent svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);pointer-events:none}
+  #parent circle{fill:none;stroke:#ff7aa8;stroke-width:8;stroke-linecap:round;stroke-dasharray:283;stroke-dashoffset:283}
+  #parent.holding{opacity:.9}
+
+  #panelWrap{position:fixed;inset:0;z-index:40;background:rgba(70,50,90,.35);display:none;align-items:center;justify-content:center;padding:3vmin}
+  #panelWrap.open{display:flex}
+  #panel{background:#fff;border-radius:max(4vmin,18px);padding:max(4vmin,18px);width:min(560px,94vw);max-height:92vh;overflow:auto;
+    box-shadow:0 2vmin 6vmin rgba(0,0,0,.2);font-size:17px;touch-action:pan-y}
+  #panel h2{font-size:22px;color:#c2577d;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  #panel .sec{margin:14px 0 6px;color:#8a7a99;font-size:14px;font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:2px solid #f3d5e2;background:#fff7fb;color:#7a5b77;border-radius:999px;padding:10px 16px;font-size:17px;font-family:inherit;cursor:pointer}
+  .chip.sel{background:#ff7aa8;border-color:#ff7aa8;color:#fff;font-weight:700}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #f6eef3}
+  .row .lbl{flex:1}
+  .row .sub{display:block;font-size:13px;color:#a397ad;margin-top:2px}
+  .sw{flex:none;width:58px;height:34px;border-radius:999px;background:#e4dbe8;position:relative;border:none;cursor:pointer;transition:background .2s}
+  .sw::after{content:"";position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s}
+  .sw.on{background:#6fdc95}.sw.on::after{left:27px}
+  #micNote{font-size:13px;color:#e07a5f;min-height:18px;margin-top:6px}
+  #done{margin-top:16px;width:100%;padding:14px;font-size:19px;font-weight:700;border:none;border-radius:14px;background:#ff7aa8;color:#fff;font-family:inherit;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+
+<div id="stage">
+  <div id="main">
+    <div id="card" class="pre">
+      <span id="pic" class="emoji">🍎</span>
+      <div id="words"><div id="py">píng guǒ</div><div id="zh">苹果</div></div>
+    </div>
+    <div id="turnRow"><div id="turn"><div class="ring"></div><div class="ring r2"></div><div class="disc"></div><div class="lvl" id="lvl"></div><span class="ico emoji" id="turnIco">👄</span></div></div>
+  </div>
+  <button id="next" aria-label="下一个"><svg viewBox="0 0 100 100"><path d="M30 18 L72 50 L30 82" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+</div>
+<canvas id="fx"></canvas>
+<div id="praise">真棒！</div>
+
+<div id="parent" aria-label="家长设置：长按两秒打开">
+  <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45"/></svg>
+  <span class="emoji">⚙️</span>
+</div>
+
+<div id="panelWrap">
+  <div id="panel">
+    <h2><span class="emoji">👨‍👩‍👧</span>家长设置</h2>
+    <div class="sec">学习内容</div>
+    <div class="chips" id="cats"></div>
+    <div class="row"><div class="lbl">🎤 麦克风互动<span class="sub">听到宝宝出声就立刻表扬；只检测音量，不录音、不保存</span></div><button class="sw" id="swMic"></button></div>
+    <div id="micNote"></div>
+    <div class="row"><div class="lbl">⏩ 自动下一个<span class="sub">表扬后自动换下一张（默认关，让宝宝自己点箭头）</span></div><button class="sw" id="swAuto"></button></div>
+    <div class="row"><div class="lbl">🔤 显示汉字和拼音<span class="sub">给家长看的，宝宝只需要看图</span></div><button class="sw" id="swText"></button></div>
+    <div class="row"><div class="lbl">🐾 加上叫声<span class="sub">动物和车辆念完名字后学叫声，如“小猫，喵喵喵”</span></div><button class="sw" id="swSound"></button></div>
+    <button id="done">完成</button>
+  </div>
+</div>
+
+<div id="start">
+  <span class="orbit emoji" style="left:10vmin;top:12vmin">🍎</span>
+  <span class="orbit emoji" style="right:10vmin;top:14vmin;animation-delay:-1s">🐱</span>
+  <span class="orbit emoji" style="left:12vmin;bottom:12vmin;animation-delay:-2s">🚗</span>
+  <span class="orbit emoji" style="right:12vmin;bottom:10vmin;animation-delay:-.5s">⚽</span>
+  <button id="go" aria-label="开始"><span class="emoji">😄</span></button>
+  <div class="hint">点一点，一起学说话</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- words ---------- */
+// c: category, w: word, p: pinyin, e: emoji, s: optional sound, t: card tint
+var WORDS = [
+  {c:'animal',w:'小猫',p:'xiǎo māo',e:'🐱',s:'喵喵喵',t:'#ffe0ec'},
+  {c:'animal',w:'小狗',p:'xiǎo gǒu',e:'🐶',s:'汪汪汪',t:'#ffe3c4'},
+  {c:'animal',w:'小鸭',p:'xiǎo yā',e:'🦆',s:'嘎嘎嘎',t:'#d6f0ff'},
+  {c:'animal',w:'小鸡',p:'xiǎo jī',e:'🐥',s:'叽叽叽',t:'#fff3a6'},
+  {c:'animal',w:'小牛',p:'xiǎo niú',e:'🐮',s:'哞哞哞',t:'#e3f5d0'},
+  {c:'animal',w:'小猪',p:'xiǎo zhū',e:'🐷',s:'哼哼哼',t:'#ffd3df'},
+  {c:'animal',w:'小羊',p:'xiǎo yáng',e:'🐑',s:'咩咩咩',t:'#efeaff'},
+  {c:'animal',w:'青蛙',p:'qīng wā',e:'🐸',s:'呱呱呱',t:'#d2f5cc'},
+  {c:'animal',w:'小鸟',p:'xiǎo niǎo',e:'🐦',s:'啾啾啾',t:'#d9ecff'},
+  {c:'animal',w:'老虎',p:'lǎo hǔ',e:'🐯',s:'嗷呜',t:'#ffe2a8'},
+  {c:'animal',w:'大象',p:'dà xiàng',e:'🐘',t:'#e1e8f2'},
+  {c:'animal',w:'小鱼',p:'xiǎo yú',e:'🐟',t:'#d4f1ff'},
+  {c:'fruit',w:'苹果',p:'píng guǒ',e:'🍎',t:'#ffdcdc'},
+  {c:'fruit',w:'香蕉',p:'xiāng jiāo',e:'🍌',t:'#fff3b0'},
+  {c:'fruit',w:'西瓜',p:'xī guā',e:'🍉',t:'#dcf5d6'},
+  {c:'fruit',w:'葡萄',p:'pú tao',e:'🍇',t:'#eadcff'},
+  {c:'fruit',w:'草莓',p:'cǎo méi',e:'🍓',t:'#ffd9e0'},
+  {c:'fruit',w:'橘子',p:'jú zi',e:'🍊',t:'#ffe6c2'},
+  {c:'fruit',w:'桃子',p:'táo zi',e:'🍑',t:'#ffe1d6'},
+  {c:'car',w:'汽车',p:'qì chē',e:'🚗',s:'嘀嘀嘀',t:'#ffdede'},
+  {c:'car',w:'飞机',p:'fēi jī',e:'✈️',s:'呜——',t:'#dcefff'},
+  {c:'car',w:'火车',p:'huǒ chē',e:'🚂',s:'呜呜呜',t:'#e6e6f5'},
+  {c:'car',w:'轮船',p:'lún chuán',e:'🚢',t:'#d6efff'},
+  {c:'car',w:'公交车',p:'gōng jiāo chē',e:'🚌',t:'#fff0c2'},
+  {c:'car',w:'自行车',p:'zì xíng chē',e:'🚲',s:'叮铃铃',t:'#dff5e6'},
+  {c:'car',w:'消防车',p:'xiāo fáng chē',e:'🚒',t:'#ffd9d4'},
+  {c:'life',w:'妈妈',p:'mā ma',e:'👩',t:'#ffe0ec'},
+  {c:'life',w:'爸爸',p:'bà ba',e:'👨',t:'#dcecff'},
+  {c:'life',w:'宝宝',p:'bǎo bao',e:'👶',t:'#fff0d6'},
+  {c:'life',w:'球',p:'qiú',e:'⚽',t:'#e6f5e0'},
+  {c:'life',w:'杯子',p:'bēi zi',e:'🥤',t:'#ffe6e6'},
+  {c:'life',w:'鞋子',p:'xié zi',e:'👟',t:'#e2efff'},
+  {c:'life',w:'帽子',p:'mào zi',e:'🧢',t:'#dbe9ff'},
+  {c:'life',w:'牛奶',p:'niú nǎi',e:'🥛',t:'#eef4ff'},
+  {c:'life',w:'眼睛',p:'yǎn jing',e:'👀',t:'#f1ecff'},
+  {c:'life',w:'耳朵',p:'ěr duo',e:'👂',t:'#ffe8d9'},
+  {c:'life',w:'嘴巴',p:'zuǐ ba',e:'👄',t:'#ffe0e6'},
+  {c:'life',w:'小手',p:'xiǎo shǒu',e:'✋',t:'#fff1d9'},
+  {c:'life',w:'太阳',p:'tài yáng',e:'☀️',t:'#fff3b8'},
+  {c:'life',w:'月亮',p:'yuè liang',e:'🌙',t:'#e6e9ff'}
+];
+var CATS = [{k:'all',n:'全部'},{k:'animal',n:'动物'},{k:'fruit',n:'水果'},{k:'car',n:'交通'},{k:'life',n:'生活'}];
+var PRAISE = ['真棒！','说得真好！','宝宝好厉害！','太棒啦！','好聪明！'];
+var COLORS = ['#ff7aa8','#ffb347','#ffe066','#7bd389','#5ec8f2','#a78bfa','#ff8fab','#4dd4c6'];
+
+/* ---------- settings ---------- */
+var S = {cat:'all', mic:false, auto:false, text:true, sound:true};
+try{ var saved = JSON.parse(localStorage.getItem('bbxsh-settings')||'{}'); for(var k in S) if(k in saved) S[k]=saved[k]; }catch(e){}
+function save(){ try{ localStorage.setItem('bbxsh-settings', JSON.stringify(S)); }catch(e){} }
+
+/* ---------- elements ---------- */
+var $ = function(id){ return document.getElementById(id); };
+var card=$('card'), pic=$('pic'), py=$('py'), zh=$('zh'), wordsEl=$('words'), turn=$('turn'), turnIco=$('turnIco'), lvl=$('lvl'),
+    nextBtn=$('next'), praiseEl=$('praise'), startEl=$('start'), panelWrap=$('panelWrap');
+
+/* ---------- audio ---------- */
+var AC=null, master=null;
+function initAudio(){
+  if(AC){ if(AC.state==='suspended') AC.resume(); return; }
+  var C = window.AudioContext||window.webkitAudioContext; if(!C) return;
+  try{
+    AC = new C();
+    var comp = AC.createDynamicsCompressor(); comp.threshold.value=-18; comp.ratio.value=6;
+    master = AC.createGain(); master.gain.value = 0.25;   // soft master volume
+    master.connect(comp); comp.connect(AC.destination);
+    var b=AC.createBuffer(1,1,22050), s=AC.createBufferSource(); s.buffer=b; s.connect(AC.destination); s.start(0);
+    if(AC.state==='suspended') AC.resume();
+  }catch(e){ AC=null; }
+}
+function hz(n){ return 440*Math.pow(2,n/12); }
+function tone(n,t,dur,wave,vol){
+  if(!AC) return;
+  var o=AC.createOscillator(), g=AC.createGain();
+  o.type=wave||'sine'; o.frequency.setValueAtTime(hz(n),t);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||.3,t+.015); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t+dur+.05);
+}
+function sfxIn(){ if(!AC) return; var t=AC.currentTime+.01; tone(12,t,.18,'sine',.2); tone(19,t+.08,.25,'sine',.18); }
+function sfxChime(){ if(!AC) return; var t=AC.currentTime+.02; [0,4,7,12,16,19,24].forEach(function(n,i){ tone(n+3,t+i*.07,.45,i%2?'triangle':'sine',.22); }); }
+function sfxPop(){ if(!AC) return; var t=AC.currentTime+.005, n=[0,2,4,7,9,12][(Math.random()*6)|0]+15;
+  var o=AC.createOscillator(), g=AC.createGain(); o.frequency.setValueAtTime(hz(n+12),t); o.frequency.exponentialRampToValueAtTime(hz(n),t+.12);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.25,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+.2);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t+.25); }
+function sfxTurn(){ if(!AC) return; var t=AC.currentTime+.01; tone(7,t,.15,'sine',.16); tone(12,t+.12,.2,'sine',.16); }
+
+/* ---------- speech ---------- */
+var synth = window.speechSynthesis||null, zhVoice=null;
+function pickVoice(){
+  if(!synth) return;
+  var vs = synth.getVoices()||[];
+  var zhv = vs.filter(function(v){ return /zh[-_]?CN|cmn|Hans/i.test(v.lang); });
+  if(!zhv.length) zhv = vs.filter(function(v){ return /^zh/i.test(v.lang) && !/HK|TW|yue/i.test(v.lang); });
+  if(!zhv.length) zhv = vs.filter(function(v){ return /^zh/i.test(v.lang); });
+  zhv.sort(function(a,b){ return sc(b)-sc(a); });
+  zhVoice = zhv[0]||null;
+  function sc(v){ var s=0; if(/Xiaoxiao|Ting|Huihui|Yaoyao|Female|女|Natural|Google/i.test(v.name)) s+=2; if(v.localService) s+=1; return s; }
+}
+if(synth){ pickVoice(); if('onvoiceschanged' in synth) synth.onvoiceschanged=pickVoice; }
+// speak one line; cb fires on end OR after an estimated duration (TTS end events are unreliable / may be missing)
+function say(text, rate, cb, onStart){
+  var done=false, est = 700 + text.replace(/[，！。：、—\s]/g,'').length*330/rate;
+  function fin(){ if(done) return; done=true; clearTimeout(tm); cb && cb(); }
+  var tm = setTimeout(fin, est+1500);
+  if(!synth){ clearTimeout(tm); tm=setTimeout(fin, est); onStart&&onStart(); return; }
+  try{
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang='zh-CN'; if(zhVoice) u.voice=zhVoice; u.rate=rate; u.pitch=1.3; u.volume=.9;
+    u.onstart=function(){ onStart&&onStart(); clearTimeout(tm); tm=setTimeout(fin, est*2+2000); };
+    u.onend=fin; u.onerror=fin;
+    synth.speak(u);
+    if(!zhVoice && !(synth.getVoices()||[]).length){ clearTimeout(tm); tm=setTimeout(fin, est); onStart&&onStart(); } // no voices at all
+  }catch(e){ clearTimeout(tm); tm=setTimeout(fin, est); }
+}
+function hush(){ if(synth) try{ synth.cancel(); }catch(e){} }
+
+/* ---------- particles ---------- */
+var cv=$('fx'), ctx=cv.getContext('2d'), parts=[], W=0, H=0, running=false;
+function resize(){ var d=Math.min(window.devicePixelRatio||1,2); W=innerWidth; H=innerHeight; cv.width=W*d; cv.height=H*d; ctx.setTransform(d,0,0,d,0,0); }
+addEventListener('resize',resize); resize();
+function rnd(a,b){ return a+Math.random()*(b-a); }
+function burst(x,y,n,big,confetti){
+  var u=Math.min(W,H);
+  for(var i=0;i<n;i++){
+    var a=rnd(0,Math.PI*2), sp=rnd(big?3:1,big?11:5)*u/700;
+    parts.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-(big?3:1)*u/700,r:rnd(.012,big?.04:.03)*u,
+      c:COLORS[(Math.random()*COLORS.length)|0], k:confetti?(Math.random()<.5?2:1):(Math.random()<.3?1:0),
+      rot:rnd(0,6),vr:rnd(-.2,.2),life:1,decay:rnd(.007,.016)});
+  }
+  if(parts.length>600) parts.splice(0,parts.length-600);
+  if(!running){ running=true; requestAnimationFrame(loop); }
+}
+function loop(){
+  ctx.clearRect(0,0,W,H); var g=Math.min(W,H)/700;
+  for(var i=parts.length-1;i>=0;i--){
+    var p=parts[i]; p.x+=p.vx; p.y+=p.vy; p.vx*=.985; p.vy=p.vy*.985+(p.k?.08:-.02)*g; p.rot+=p.vr; p.life-=p.decay;
+    if(p.life<=0){ parts.splice(i,1); continue; }
+    ctx.globalAlpha=Math.min(1,p.life*1.6); ctx.fillStyle=p.c;
+    if(p.k===1){ ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.beginPath();
+      for(var j=0;j<10;j++){ var rr=j%2?p.r*.45:p.r, an=j*Math.PI/5; ctx.lineTo(Math.cos(an)*rr,Math.sin(an)*rr); } ctx.closePath(); ctx.fill(); ctx.restore(); }
+    else if(p.k===2){ ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillRect(-p.r*.5,-p.r*.25,p.r,p.r*.5*Math.abs(Math.cos(p.rot*2))+1); ctx.restore(); }
+    else { ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.globalAlpha*=.7; ctx.fill(); ctx.globalAlpha=Math.min(1,p.life*1.6);
+      ctx.beginPath(); ctx.arc(p.x-p.r*.35,p.y-p.r*.35,p.r*.28,0,7); ctx.fillStyle='rgba(255,255,255,.8)'; ctx.fill(); }
+  }
+  ctx.globalAlpha=1;
+  if(parts.length) requestAnimationFrame(loop); else { running=false; ctx.clearRect(0,0,W,H); }
+}
+
+/* ---------- microphone (volume detection only, never recorded) ---------- */
+var micStream=null, analyser=null, micBuf=null, micNote=$('micNote');
+function micSupported(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && !!(window.AudioContext||window.webkitAudioContext); }
+function startMic(){
+  return new Promise(function(res,rej){
+    if(micStream){ res(); return; }
+    if(!micSupported()){ rej(new Error(window.isSecureContext===false?'insecure':'unsupported')); return; }
+    initAudio();
+    navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false}}).then(function(st){
+      micStream=st;
+      var src=AC.createMediaStreamSource(st); analyser=AC.createAnalyser(); analyser.fftSize=1024;
+      micBuf=new Uint8Array(analyser.fftSize); src.connect(analyser);   // analyser only: not routed to speakers, not stored
+      res();
+    }).catch(rej);
+  });
+}
+function stopMic(){ if(micStream){ micStream.getTracks().forEach(function(t){ t.stop(); }); } micStream=null; analyser=null; }
+function micLevel(){
+  if(!analyser) return 0;
+  analyser.getByteTimeDomainData(micBuf); var s=0;
+  for(var i=0;i<micBuf.length;i++){ var v=(micBuf[i]-128)/128; s+=v*v; }
+  return Math.sqrt(s/micBuf.length);
+}
+function micErrText(e){
+  var n = e && (e.name||e.message)||'';
+  if(/insecure/.test(n)) return location.protocol==='file:' ? '当前是本地文件打开，浏览器不允许使用麦克风，已使用计时模式。请用 https 网址打开。' : '需要用 https 网址打开才能使用麦克风，已使用计时模式。';
+  if(/unsupported/.test(n)) return '这个浏览器不支持麦克风，已使用计时模式。';
+  if(/NotAllowed|Permission|Security/i.test(n)) return '没有获得麦克风权限，已使用计时模式。';
+  if(/NotFound/i.test(n)) return '没有找到麦克风，已使用计时模式。';
+  return '麦克风暂时不可用，已使用计时模式。';
+}
+
+/* ---------- game flow ---------- */
+var deck=[], idx=-1, cur=null, token=0, phase='idle', started=false, paused=false, turnRAF=0, lastNav=0;
+function pool(){ return S.cat==='all'?WORDS.slice():WORDS.filter(function(w){ return w.c===S.cat; }); }
+function newDeck(){
+  var p=pool(), last=cur;
+  for(var i=p.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0, t=p[i]; p[i]=p[j]; p[j]=t; }
+  if(last && p.length>1 && p[0]===last){ p.push(p.shift()); }
+  deck=p; idx=-1;
+}
+function applyText(){ wordsEl.classList.toggle('hidden', !S.text); }
+function showWord(w){
+  cur=w; pic.textContent=w.e; card.style.setProperty('--tint', w.t);
+  py.textContent=w.p; zh.innerHTML='';
+  w.w.split('').forEach(function(ch){ var s=document.createElement('span'); s.textContent=ch; zh.appendChild(s); });
+}
+function setPhase(p){ phase=p; window.__talk.phase=p; }
+function endTurnUI(){ cancelAnimationFrame(turnRAF); turn.classList.remove('on'); lvl.style.transform='scale(1)'; }
+function litChars(on){
+  var spans=zh.children, i=0;
+  if(!on){ for(var k=0;k<spans.length;k++) spans[k].classList.remove('lit'); return; }
+  // light up characters one by one during the slow reading
+  (function step(){ if(i>0 && spans[i-1]) spans[i-1].classList.remove('lit'); if(i<spans.length){ spans[i].classList.add('lit'); i++; setTimeout(step, 520); } })();
+}
+function goNext(){
+  var now=performance.now(); if(now-lastNav<500) return; lastNav=now;
+  token++; hush(); endTurnUI(); hidePraise(); nextBtn.classList.remove('invite');
+  if(++idx>=deck.length){ newDeck(); idx=0; }
+  var w=deck[idx], my=token;
+  if(card.classList.contains('pre')){ enter(); }
+  else { card.classList.add('out'); setTimeout(function(){ if(my!==token) return; card.classList.remove('out'); card.classList.add('pre'); enter(); }, 340); }
+  function enter(){
+    showWord(w); void card.offsetWidth; card.classList.remove('pre'); sfxIn();
+    setTimeout(function(){ if(my===token) teach(my); }, 650);
+  }
+}
+function teach(my){
+  if(paused || my!==token) return;
+  setPhase('speak'); endTurnUI(); hidePraise();
+  var w=cur;
+  // 1) the word, slowly
+  say(w.w, .55, function(){
+    card.classList.remove('speak'); litChars(false);
+    if(my!==token) return;
+    // 2) the animal / vehicle sound, if any
+    var after = function(){
+      if(my!==token) return;
+      // 3) the prompt
+      setTimeout(function(){ if(my!==token) return;
+        card.classList.add('speak');
+        say('宝宝跟我说：'+w.w+'！', .7, function(){ card.classList.remove('speak'); if(my===token) yourTurn(my); });
+      }, 250);
+    };
+    if(w.s && S.sound){ setTimeout(function(){ if(my!==token) return; card.classList.add('speak');
+      say(w.w+'，'+w.s+'！', .75, function(){ card.classList.remove('speak'); after(); }); }, 250); }
+    else after();
+  }, function(){ if(my===token){ card.classList.add('speak'); litChars(true); } });
+}
+function yourTurn(my){
+  if(my!==token) return;
+  setPhase('turn'); sfxTurn();
+  var useMic = S.mic && !!analyser;
+  turnIco.textContent = useMic ? '👂' : '👄';
+  turn.classList.add('on');
+  var t0=performance.now(), base=0, nb=0, loud=0, limit = useMic?6500:4200;
+  (function tick(){
+    if(my!==token) return;
+    var el=performance.now()-t0;
+    if(useMic){
+      var l=micLevel();
+      lvl.style.transform='scale('+(1+Math.min(1,l*6)*.7)+')';
+      if(el<350){ base=Math.max(base,l); nb++; }        // brief calibration of room noise (speech has ended by now)
+      else {
+        var th=Math.max(.035, base*2.2);
+        if(l>th){ loud+=16; if(loud>=130){ praise(my); return; } } else loud=Math.max(0,loud-8);
+      }
+    }
+    if(el>=limit){ praise(my); return; }   // no failure: time out into praise too
+    turnRAF=requestAnimationFrame(tick);
+  })();
+}
+var praiseT=0;
+function hidePraise(){ praiseEl.classList.remove('show'); clearTimeout(praiseT); }
+function praise(my){
+  if(my!==token) return;
+  setPhase('praise'); endTurnUI();
+  var txt=PRAISE[(Math.random()*PRAISE.length)|0];
+  praiseEl.textContent=txt; praiseEl.classList.add('show');
+  sfxChime();
+  burst(W/2,H*.42,70,true,true); setTimeout(function(){ burst(W*.25,H*.3,25,true,true); burst(W*.75,H*.3,25,true,true); },250);
+  card.classList.remove('tap'); void card.offsetWidth; card.classList.add('tap');
+  setTimeout(function(){ if(my===token) say(txt, .85, function(){
+    if(my!==token) return;
+    praiseT=setTimeout(hidePraise, 600);
+    setPhase('done');
+    if(S.auto) setTimeout(function(){ if(my===token && !paused) goNext(); }, 1400);
+    else nextBtn.classList.add('invite');
+  }); }, 500);
+}
+function repeatWord(){
+  var now=performance.now(); if(now-lastNav<600) return; lastNav=now;
+  token++; hush(); nextBtn.classList.remove('invite');
+  card.classList.remove('tap'); void card.offsetWidth; card.classList.add('tap');
+  var r=card.getBoundingClientRect(); burst(r.left+r.width/2,r.top+r.height*.35,16,false);
+  var my=token; setTimeout(function(){ teach(my); }, 200);
+}
+
+/* ---------- input ---------- */
+var downX=null, downY=0, downOnCard=false, downId=null;
+function inUI(t){ return t && t.closest && (t.closest('#parent')||t.closest('#panelWrap')||t.closest('#start')); }
+document.addEventListener('pointerdown', function(e){
+  if(!started || paused || inUI(e.target)) return;
+  e.preventDefault(); initAudio();
+  if(e.target.closest('#next')){ nextBtn.classList.add('press'); setTimeout(function(){ nextBtn.classList.remove('press'); },150);
+    var r=nextBtn.getBoundingClientRect(); burst(r.left+r.width/2,r.top+r.height/2,12,false); sfxPop(); goNext(); return; }
+  if(e.target.closest('#card')){ if(downId===null){ downX=e.clientX; downY=e.clientY; downOnCard=true; downId=e.pointerId; } return; }
+  burst(e.clientX,e.clientY,12,false); sfxPop();      // background: always some feedback
+},{passive:false});
+document.addEventListener('pointerup', function(e){
+  if(!started || paused || e.pointerId!==downId) return;
+  var dx=e.clientX-downX, dy=e.clientY-downY; downId=null;
+  if(!downOnCard) return; downOnCard=false;
+  if(dx<-60 && Math.abs(dx)>Math.abs(dy)){ sfxPop(); goNext(); }   // swipe left = next
+  else if(Math.abs(dx)<40 && Math.abs(dy)<40) repeatWord();          // tap = hear it again
+},{passive:false});
+document.addEventListener('pointercancel', function(){ downId=null; downOnCard=false; });
+
+['gesturestart','gesturechange','gestureend','dblclick','contextmenu','selectstart','dragstart'].forEach(function(n){
+  document.addEventListener(n,function(e){ e.preventDefault(); },{passive:false}); });
+document.addEventListener('touchmove',function(e){ if(!(e.target.closest && e.target.closest('#panel'))) e.preventDefault(); },{passive:false});
+document.addEventListener('touchend',function(e){ if(e.target.closest && e.target.closest('#panelWrap')) return; if(e.touches.length===0 && e.cancelable) e.preventDefault(); },{passive:false});
+document.addEventListener('wheel',function(e){ if(e.ctrlKey) e.preventDefault(); },{passive:false});
+document.addEventListener('keydown',function(e){ if((e.ctrlKey||e.metaKey)&&/^[+\-=0]$/.test(e.key)) e.preventDefault(); });
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){ token++; hush(); endTurnUI(); if(AC) AC.suspend(); setPhase('idle'); }
+  else if(started && !paused){ if(AC) AC.resume(); repeatWord(); }
+});
+
+/* ---------- start ---------- */
+function start(e){
+  if(started) return; if(e) e.preventDefault();
+  started=true; initAudio(); applyText(); newDeck();
+  // unlock TTS inside the gesture (iOS)
+  if(synth) try{ var u=new SpeechSynthesisUtterance(' '); u.volume=0; u.lang='zh-CN'; synth.speak(u); }catch(_){}
+  var de=document.documentElement, rf=de.requestFullscreen||de.webkitRequestFullscreen;
+  if(rf){ try{ var p=rf.call(de,{navigationUI:'hide'}); if(p&&p.catch) p.catch(function(){}); }catch(_){} }
+  if(S.mic) startMic().catch(function(){ /* silently fall back to timer mode */ });
+  startEl.classList.add('gone'); setTimeout(function(){ startEl.style.display='none'; },600);
+  burst(W/2,H/2,40,true);
+  setTimeout(goNext, 350);
+}
+startEl.addEventListener('pointerdown', start, {passive:false});
+startEl.addEventListener('click', start);
+
+/* ---------- parent control ---------- */
+var parentEl=$('parent'), ring=parentEl.querySelector('circle'), holdRAF=0, holdStart=0, holding=false;
+function holdTick(){
+  var p=Math.min(1,(performance.now()-holdStart)/2000); ring.style.strokeDashoffset=283*(1-p);
+  if(p>=1){ endHold(); openPanel(); return; }
+  holdRAF=requestAnimationFrame(holdTick);
+}
+function beginHold(e){ e.preventDefault(); e.stopPropagation(); if(holding) return; holding=true; holdStart=performance.now(); parentEl.classList.add('holding'); holdRAF=requestAnimationFrame(holdTick); }
+function endHold(){ cancelAnimationFrame(holdRAF); holding=false; parentEl.classList.remove('holding'); ring.style.strokeDashoffset=283; }
+parentEl.addEventListener('pointerdown', beginHold, {passive:false});
+['pointerup','pointercancel','pointerleave'].forEach(function(n){ parentEl.addEventListener(n, endHold); });
+
+var catsEl=$('cats'), swMic=$('swMic'), swAuto=$('swAuto'), swText=$('swText'), swSound=$('swSound'), catChanged=false;
+CATS.forEach(function(c){ var b=document.createElement('button'); b.className='chip'; b.textContent=c.n; b.dataset.k=c.k;
+  b.addEventListener('click',function(){ if(S.cat!==c.k){ S.cat=c.k; catChanged=true; save(); renderPanel(); } }); catsEl.appendChild(b); });
+function renderPanel(){
+  [].forEach.call(catsEl.children,function(b){ b.classList.toggle('sel', b.dataset.k===S.cat); });
+  swMic.classList.toggle('on',S.mic); swAuto.classList.toggle('on',S.auto); swText.classList.toggle('on',S.text); swSound.classList.toggle('on',S.sound);
+}
+function openPanel(){
+  paused=true; token++; hush(); endTurnUI(); hidePraise(); setPhase('paused'); catChanged=false;
+  micNote.textContent = S.mic && !analyser ? '麦克风还没启用，请关掉再打开一次。' : '';
+  renderPanel(); panelWrap.classList.add('open');
+}
+function closePanel(){
+  panelWrap.classList.remove('open'); paused=false; save(); applyText();
+  if(!started) return;
+  if(catChanged){ newDeck(); goNext(); } else repeatWord();
+}
+swMic.addEventListener('click',function(){
+  if(S.mic){ S.mic=false; stopMic(); micNote.textContent=''; save(); renderPanel(); return; }
+  micNote.textContent='正在请求麦克风权限…';
+  startMic().then(function(){ S.mic=true; micNote.textContent='已开启：宝宝出声时会立刻得到表扬。'; save(); renderPanel(); })
+    .catch(function(e){ S.mic=false; micNote.textContent=micErrText(e); save(); renderPanel(); });
+});
+swAuto.addEventListener('click',function(){ S.auto=!S.auto; save(); renderPanel(); });
+swText.addEventListener('click',function(){ S.text=!S.text; save(); renderPanel(); applyText(); });
+swSound.addEventListener('click',function(){ S.sound=!S.sound; save(); renderPanel(); });
+$('done').addEventListener('click', closePanel);
+panelWrap.addEventListener('pointerdown',function(e){ if(e.target===panelWrap) closePanel(); });
+
+window.__talk={phase:'idle', words:WORDS.length, openPanel:openPanel};
+applyText();
+})();
+</script>
+</body>
+</html>
